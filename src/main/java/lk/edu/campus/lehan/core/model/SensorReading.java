@@ -1,0 +1,46 @@
+package lk.edu.campus.lehan.core.model;
+
+/**
+ * @author Client Server Architecture CW (Lehan Methyuga - 20233217)
+ */
+
+
+public class SensorReading {
+    private String id; // Unique reading event ID (UUID recommended)
+    private long timestamp; // Epoch time (ms) when reading was captured
+    private double value; // Actual metric taken by hardware
+
+    // No-argument constructor for JAXB/Jackson
+    public SensorReading() {
+    }
+
+    public SensorReading(String id, long timestamp, double value) {
+        this.id = id;
+        this.timestamp = timestamp;
+        this.value = value;
+    }
+
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
+    }
+
+    public long getTimestamp() {
+        return timestamp;
+    }
+
+    public void setTimestamp(long timestamp) {
+        this.timestamp = timestamp;
+    }
+
+    public double getValue() {
+        return value;
+    }
+
+    public void setValue(double value) {
+        this.value = value;
+    }
+}
