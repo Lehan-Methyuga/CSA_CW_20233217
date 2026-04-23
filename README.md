@@ -265,13 +265,3 @@ Stack traces leak internal class names, package structure, and dependency detail
 JAX-RS filters centralize request/response logging and avoid repetitive logging code in every endpoint.
 
 ---
-
-## ✅ 6. CW Spec Alignment Checklist
-- Public GitHub repo with README report
-- JAX-RS only (no Spring Boot)
-- In-memory data only (no database)
-- Discovery endpoint and versioned base path
-- Room and sensor resources implemented
-- Sub-resource locator implemented
-- Exception mappers + global safety net + logging filter implemented
-- More than five cURL tests provided (16 included)
