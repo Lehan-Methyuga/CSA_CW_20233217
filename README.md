@@ -97,10 +97,11 @@ curl -i -X GET "http://localhost:8080/smart-campus-api/api/v1/rooms/LIB-301" \
 <summary><b>Step 4 - Conditional GET using If-None-Match (Expected: 304 Not Modified)</b></summary>
 
 ```bash
-# Replace <ETAG_FROM_STEP_3> with the exact ETag value returned in Step 3
+# Replace the value below with the exact ETag from Step 3 (do not include angle brackets)
+# Example format: -H "If-None-Match: \"123456789\""
 curl -i -X GET "http://localhost:8080/smart-campus-api/api/v1/rooms/LIB-301" \
   -H "Accept: application/json" \
-  -H "If-None-Match: <ETAG_FROM_STEP_3>"
+  -H "If-None-Match: \"ETAG_FROM_STEP_3\""
 ```
 </details>
 
