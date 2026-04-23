@@ -1,157 +1,277 @@
-# 🎓 Smart Campus API - Coursework Portfolio
+# 🏛️ Smart Campus API
+**Module:** 5COSC022W Client-Server Architectures (2025/26)  
+**Author:** Lehan Methyuga | **ID:** 20233217
 
-![Java Version](https://img.shields.io/badge/Java-11%2B-blue?logo=java)
-![Jakarta EE](https://img.shields.io/badge/Jakarta_EE-JAX--RS-orange?logo=jakartaee)
-![Apache Tomcat](https://img.shields.io/badge/Apache_Tomcat-9.0%2B-F8DC75?logo=apachetomcat)
-
-> **Module:** 5COSC022W Client-Server Architectures  
-> **Author:** Lehan Methyuga (Student ID: 20233217)  
-> **Topic:** REST API design, development and implementation  
+![Java](https://img.shields.io/badge/Java-11%2B-2C3E50?style=for-the-badge&logo=java)
+![JAX-RS](https://img.shields.io/badge/JAX--RS-Jakarta_EE-E8ECF0?style=for-the-badge&logo=jakartaee&logoColor=black)
+![Tomcat](https://img.shields.io/badge/Apache_Tomcat-9.0%2B-2C3E50?style=for-the-badge&logo=apachetomcat)
 
 ---
 
 ## 📖 1. Project Overview
-Welcome to my submission for the **Client-Server Architectures Coursework (2025/26)**. This project serves as the robust backend for the university's "Smart Campus" initiative. 
+This project is my coursework submission for the Smart Campus initiative.  
+It provides a REST API backend for managing Rooms and IoT Sensors (for example CO2 monitors and occupancy sensors).
 
-My architectural goal was to build a highly scalable RESTful API to manage physical Rooms and various Sensors (like CO2 monitors and occupancy trackers) using purely **Jakarta RESTful Web Services (JAX-RS)**. Adhering strictly to the specifications, I avoided Spring Boot and SQL Databases, relying instead on high-performance, strictly synchronized in-memory data structures.
+To follow the coursework constraints, I built this using **pure JAX-RS (Jersey)**:
+- No Spring Boot
+- No SQL/NoSQL database
+- In-memory storage using thread-safe collections (`ConcurrentHashMap`)
 
 ---
 
-## 🚀 2. Build & Launch Instructions
+## 🚀 2. Quick Start Guide
+### Prerequisites
+- Java 11+
+- Maven 3.8+
+- Apache Tomcat 9+
 
-This project conforms perfectly to the standard Java EE Web Profile via Maven. 
-
-**1. Compiling the Project**  
-Open your terminal, navigate to the project root directory, and execute:
+### Build
 ```bash
 mvn clean package
 ```
 
-**2. Server Deployment**  
-Maven will compile the system and instantly generate a `smart-campus-api.war` artifact located inside your `/target` folder. Simply copy this file directly into the `webapps` folder of your **Apache Tomcat (v9+)** installation and launch the Tomcat server.
+### Deploy
+1. Maven generates `target/smart-campus-api.war`
+2. Copy it into Tomcat `webapps/`
+3. Start Tomcat
+
+Base URL:
+```text
+http://localhost:8080/smart-campus-api/api/v1
+```
 
 ---
 
-## 🌟 3. Advanced Implementations (Going Above & Beyond)
+## ⚡ 3. Advanced Implementations (Distinction Features)
+### 1. ETag Caching (`304 Not Modified`)
+Implemented on `GET /rooms/{roomId}`.  
+If client sends matching `If-None-Match`, server returns `304` without sending full payload again.
 
-To ensure my API scales resiliently into an industry-grade format, I challenged myself to natively integrate advanced handling patterns:
+### 2. Custom Boundary Validation (`400 Bad Request`)
+Invalid JSON payload logic (empty fields, invalid values) is blocked before persistence layer and mapped via custom exception.
 
-> [!TIP]
-> **304 Not Modified (ETags & Server-Side Caching)**  
-> To critically save operational bandwidth, I integrated intelligent ETags inside the `GET /rooms/{roomId}` endpoint. The server calculates a deterministic `hashCode()` based on the exact variable state of the requested Room. If a client queries the room with an identical `If-None-Match` header tag, the API automatically suspends compilation and gracefully bounces back an empty `304 Not Modified` payload.
+### 3. Thread-Safe Concurrency (Read/Write Locks)
+DAO layer uses `ReentrantReadWriteLock`, allowing concurrent reads and safe exclusive writes.
 
-> [!WARNING]
-> **400 Bad Request (Custom Payload Boundary Validation)**  
-> To protect the internal application states from garbage JSON data inputs, my POST requests strictly intercept formatting locally before interacting with the database. Triggering malformed inputs (like empty strings or negative room capacities) immediately summons my custom `MalformedPayloadException`, actively evaluated by a native mapper returning a safe `/errors/400` entity.
-
-> [!IMPORTANT]
-> **Elite Concurrency Controls (ReentrantReadWriteLocks)**  
-> Instead of arbitrarily locking the entire DAO layer with heavy `synchronized` statements, I implemented refined `ReentrantReadWriteLock` variables bridging the DAO structures. This explicitly permits limitless `GET` connections to read instances simultaneously, while perfectly guaranteeing singleton operations specifically locked during `POST` and `DELETE` events.
-
----
-
-## 💻 4. API Testing Directory (Video Demo cURL Scripts)
-
-The following local execution strings correspond sequentially to the functionality highlighted during my Postman Video Demonstration test track:
-
-<details>
-<summary><b>Step 1: Test API Metadata (Root Discovery)</b></summary>
-
-```bash
-curl -X GET http://localhost:8080/smart-campus-api/api/v1 -H "Accept: application/json"
-```
-</details>
-
-<details>
-<summary><b>Step 2: Room Compilation (POST Integration)</b></summary>
-
-```bash
-curl -X POST http://localhost:8080/smart-campus-api/api/v1/rooms \
-     -H "Content-Type: application/json" \
-     -d "{\"name\": \"Main Auditorium\", \"capacity\": 250}"
-```
-</details>
-
-<details>
-<summary><b>Step 3: Bi-Directional Sensor Assignment (POST Validation)</b></summary>
-
-*(Make sure to accurately replace `ROOM-XXXX` with the generated Room ID!)*
-```bash
-curl -X POST http://localhost:8080/smart-campus-api/api/v1/sensors \
-     -H "Content-Type: application/json" \
-     -d "{\"roomId\": \"ROOM-XXXX\", \"type\": \"CO2\", \"status\": \"ACTIVE\"}"
-```
-</details>
-
-<details>
-<summary><b>Step 4: Horizontal Sensor Filtering by Criteria (GET)</b></summary>
-
-```bash
-curl -X GET "http://localhost:8080/smart-campus-api/api/v1/sensors?type=CO2" -H "Accept: application/json"
-```
-</details>
-
-<details>
-<summary><b>Step 5: Updating Historical Readings (Nested Sub-Resource Side-Effects)</b></summary>
-
-*(Make sure to accurately replace `SENS-XXXX` with your generated Sensor ID!)*
-```bash
-curl -X POST http://localhost:8080/smart-campus-api/api/v1/sensors/SENS-XXXX/readings \
-     -H "Content-Type: application/json" \
-     -d "{\"value\": 412.5}"
-```
-</details>
+### 4. Sub-Resource Locator Pattern
+Nested resource routing is handled via:
+`/sensors/{sensorId}/readings`
 
 ---
 
-## 📝 5. Conceptual Report (Coursework Q&A Section)
+## 🧪 4. Interactive Testing Guide (cURL)
+The following 16-step sequence is the same order used in my video demonstration.
 
-### Part 1: Service Architecture & Setup
+Status coverage:
+- Success: `200`, `201`, `204`
+- Architectural constraints: `304`, `400`, `403`, `409`, `422`
 
-> **Q1: Explain the default lifecycle of a JAX-RS Resource class and how it impacts in-memory data synchronization.**
+<details>
+<summary><b>Step 1 - Discovery Root (Expected: 200 OK)</b></summary>
 
-**My Defense:** By default, JAX-RS strictly executes its mapping interfaces (such as my `SensorRoomResource`) via a "per-request" lifecycle design. Every single time a user queries an HTTP endpoint, the Tomcat containment rapidly instantiates a brand new resource component, handles the execution flow, and then violently rips it down under Java's Garbage Collection. Because this architecture actively strips statefulness, storing simple ArrayLists identically inside the controller file logically self-deletes all variables dynamically. To architect around this, I detached my data stores explicitly into abstracted `RoomDAO` and `SensorDAO` classes functioning globally as pure Singletons.
+```bash
+curl -X GET "http://localhost:8080/smart-campus-api/api/v1" \
+  -H "Accept: application/json"
+```
+</details>
 
-> **Q2: Why is Hypermedia (HATEOAS) a hallmark of advanced RESTful design and how does it benefit clients?**
+<details>
+<summary><b>Step 2 - List Rooms (Expected: 200 OK)</b></summary>
 
-**My Defense:** Integrating HATEOAS effectively implies that standard objects are directly served attached to contextual hyperlink state operations targeting what a user can functionally do physically next. This functions amazingly structurally because mobile engineers are safely blocked from hard-coding vulnerable endpoints into front-end logic directly. We establish a massive level of abstraction correctly; if I ever redesign the literal URI structure under `/api/v2`, client devices theoretically won’t break dynamically because they map specifically off the URI payloads handed out by HATEOAS engines instead of static strings.
+```bash
+curl -X GET "http://localhost:8080/smart-campus-api/api/v1/rooms" \
+  -H "Accept: application/json"
+```
+</details>
+
+<details>
+<summary><b>Step 3 - Get Room LIB-301 and capture ETag (Expected: 200 OK)</b></summary>
+
+```bash
+curl -i -X GET "http://localhost:8080/smart-campus-api/api/v1/rooms/LIB-301" \
+  -H "Accept: application/json"
+```
+</details>
+
+<details>
+<summary><b>Step 4 - Conditional GET using If-None-Match (Expected: 304 Not Modified)</b></summary>
+
+```bash
+# Replace <ETAG_FROM_STEP_3> with the exact ETag value returned in Step 3
+curl -i -X GET "http://localhost:8080/smart-campus-api/api/v1/rooms/LIB-301" \
+  -H "Accept: application/json" \
+  -H "If-None-Match: <ETAG_FROM_STEP_3>"
+```
+</details>
+
+<details>
+<summary><b>Step 5 - Create Invalid Room (Expected: 400 Bad Request)</b></summary>
+
+```bash
+curl -X POST "http://localhost:8080/smart-campus-api/api/v1/rooms" \
+  -H "Content-Type: application/json" \
+  -d "{\"id\":\"ROOM-BAD-01\",\"name\":\"\",\"capacity\":-1}"
+```
+</details>
+
+<details>
+<summary><b>Step 6 - Create Valid Room ROOM-A100 (Expected: 201 Created)</b></summary>
+
+```bash
+curl -X POST "http://localhost:8080/smart-campus-api/api/v1/rooms" \
+  -H "Content-Type: application/json" \
+  -d "{\"id\":\"ROOM-A100\",\"name\":\"AI Lab\",\"capacity\":60}"
+```
+</details>
+
+<details>
+<summary><b>Step 7 - Delete ROOM-A100 (Expected: 204 No Content)</b></summary>
+
+```bash
+curl -i -X DELETE "http://localhost:8080/smart-campus-api/api/v1/rooms/ROOM-A100" \
+  -H "Accept: application/json"
+```
+</details>
+
+<details>
+<summary><b>Step 8 - Create Invalid Sensor Payload (Expected: 400 Bad Request)</b></summary>
+
+```bash
+curl -X POST "http://localhost:8080/smart-campus-api/api/v1/sensors" \
+  -H "Content-Type: application/json" \
+  -d "{\"id\":\"SENS-BAD-01\",\"type\":\"\",\"status\":\"\",\"roomId\":\"LIB-301\"}"
+```
+</details>
+
+<details>
+<summary><b>Step 9 - Create Sensor with Missing Room Link (Expected: 422 Unprocessable Entity)</b></summary>
+
+```bash
+curl -X POST "http://localhost:8080/smart-campus-api/api/v1/sensors" \
+  -H "Content-Type: application/json" \
+  -d "{\"id\":\"SENS-404-ROOM\",\"type\":\"CO2\",\"status\":\"ACTIVE\",\"roomId\":\"ROOM-NOT-EXIST\"}"
+```
+</details>
+
+<details>
+<summary><b>Step 10 - Create Valid Sensor SENS-CO2-01 (Expected: 201 Created)</b></summary>
+
+```bash
+curl -X POST "http://localhost:8080/smart-campus-api/api/v1/sensors" \
+  -H "Content-Type: application/json" \
+  -d "{\"id\":\"SENS-CO2-01\",\"roomId\":\"LIB-301\",\"type\":\"CO2\",\"status\":\"ACTIVE\"}"
+```
+</details>
+
+<details>
+<summary><b>Step 11 - Filter Sensors by Type CO2 (Expected: 200 OK)</b></summary>
+
+```bash
+curl -X GET "http://localhost:8080/smart-campus-api/api/v1/sensors?type=CO2" \
+  -H "Accept: application/json"
+```
+</details>
+
+<details>
+<summary><b>Step 12 - Get Readings for SENS-CO2-01 (Expected: 200 OK)</b></summary>
+
+```bash
+curl -X GET "http://localhost:8080/smart-campus-api/api/v1/sensors/SENS-CO2-01/readings" \
+  -H "Accept: application/json"
+```
+</details>
+
+<details>
+<summary><b>Step 13 - Add Reading to SENS-CO2-01 (Expected: 201 Created)</b></summary>
+
+```bash
+curl -X POST "http://localhost:8080/smart-campus-api/api/v1/sensors/SENS-CO2-01/readings" \
+  -H "Content-Type: application/json" \
+  -d "{\"id\":\"READ-01\",\"timestamp\":1713931200000,\"value\":412.5}"
+```
+</details>
+
+<details>
+<summary><b>Step 14 - Create MAINTENANCE Sensor SENS-MAINT-01 (Expected: 201 Created)</b></summary>
+
+```bash
+curl -X POST "http://localhost:8080/smart-campus-api/api/v1/sensors" \
+  -H "Content-Type: application/json" \
+  -d "{\"id\":\"SENS-MAINT-01\",\"roomId\":\"LIB-301\",\"type\":\"Temperature\",\"status\":\"MAINTENANCE\"}"
+```
+</details>
+
+<details>
+<summary><b>Step 15 - Add Reading to MAINTENANCE Sensor (Expected: 403 Forbidden)</b></summary>
+
+```bash
+curl -X POST "http://localhost:8080/smart-campus-api/api/v1/sensors/SENS-MAINT-01/readings" \
+  -H "Content-Type: application/json" \
+  -d "{\"id\":\"READ-M-01\",\"timestamp\":1713931300000,\"value\":27.1}"
+```
+</details>
+
+<details>
+<summary><b>Step 16 - Delete LIB-301 while sensors exist (Expected: 409 Conflict)</b></summary>
+
+```bash
+curl -i -X DELETE "http://localhost:8080/smart-campus-api/api/v1/rooms/LIB-301" \
+  -H "Accept: application/json"
+```
+</details>
+
+> Note: Run in order. Some requests depend on resources created in earlier steps.
+
+---
+
+## 📝 5. Conceptual Report (Architectural Decisions)
+
+### Part 1: Architecture and Discovery
+**JAX-RS lifecycle and state management**  
+By default, JAX-RS resources are request-scoped. New resource instances are created per request, so keeping shared state inside resource fields is unsafe. I stored shared data in singleton DAO classes and protected it with thread-safe structures and locks.
+
+**Why HATEOAS matters**  
+Hypermedia makes APIs more discoverable. Instead of clients hardcoding every endpoint, they can follow links returned in responses. This reduces client breakage when endpoint structures evolve.
 
 ### Part 2: Room Management
+**IDs vs full objects in list responses**  
+IDs-only reduces payload size but introduces more follow-up calls (N+1 style overhead). Full objects increase payload size but reduce round trips and make clients simpler.
 
-> **Q1: Returning only IDs vs full objects in lists - what are the implications for network bandwidth vs client processing?**
+**DELETE idempotency**  
+My DELETE is idempotent: first delete can return `204`, repeated delete can return `404`, but final server state is unchanged (resource remains deleted).
 
-**My Defense:** Packaging complete object components into expansive lists (like `GET /rooms`) aggressively offsets processing pressure locally onto front-end arrays. Unfortunately, executing this expands the basic JSON payload into immense network-clogging dimensions directly constrained by network latency limitations severely tracking massive systems natively. If I counter it by just dropping arrays loaded singularly with PK strings (`IDs`), the transmission is radically compressed physically. However, client processors dynamically inherit the massive burden inherently spinning up hundreds of sequential subsequent `GET /rooms/{id}` requests exactly tracing the "N+1" problem framework sequentially just to populate screen labels dynamically.
+### Part 3: Sensor Operations and Validation
+**Incorrect media types with `@Consumes(MediaType.APPLICATION_JSON)`**  
+If client sends `text/plain` or XML, JAX-RS rejects it before method logic and returns `415 Unsupported Media Type`.
 
-> **Q2: Is the DELETE operation idempotent in your implementation? What happens if a client sends the exact same DELETE request multiple times?**
+**Why query parameters for filtering**  
+`/sensors?type=CO2` is better than path-based filtering for search because type is a query constraint on a collection, not a separate resource identity.
 
-**My Defense:** Without question, my `DELETE` structural operations define perfect idempotency. Executing mathematically idempotent functions fundamentally demands that invoking identical operations indefinitely always reliably concludes mimicking an identical singular iteration state identically natively. If you accidentally throw 10 simultaneous `DELETE /rooms/LIB-301` attacks right at my API, my logic drops the physical Room actively immediately capturing `204 No Content` properly on cycle one. Every subsequent duplicate request gracefully recognizes the empty key state executing an identical empty payload structured softly inside `404 Not Found` responses identically structurally.
+### Part 4: Sub-Resource Routing
+**Sub-Resource Locator pattern**  
+Using `/sensors/{sensorId}/readings` routed to `SensorReadingResource` keeps responsibilities separated and prevents one large controller from becoming difficult to maintain.
 
-### Part 3: Sensor Operations & Linking
+**Required side effect**  
+When a reading is posted, parent sensor `currentValue` is updated so summary and historical data stay consistent.
 
-> **Q1: What are the technical consequences if a client attempts to send data in a different format when you've defined `@Consumes(MediaType.APPLICATION_JSON)`? How does JAX-RS handle it?**
+### Part 5: Error Handling and Security
+**422 vs 404 for missing linked room**  
+`404` means route missing. In this case route exists, but payload references invalid data (`roomId` not found). `422` communicates this more accurately.
 
-**My Defense:** Pushing `@Consumes(MediaType.APPLICATION_JSON)` aggressively onto my `POST` mapping definitions executes a native firewall. When arbitrary systems theoretically blast malicious XML structures or raw Text variables, my application prevents code-level activation completely natively. Functionally, JAX-RS natively monitors the arbitrary HTTP Headers catching payload formatting deviations locally inside the container level returning standard `415 Unsupported Media Type` protections globally before triggering deserialization vulnerability errors cleanly.
+**Why stack traces should never be exposed**  
+Stack traces leak internal class names, package structure, and dependency details. Attackers can use this information for targeted exploit research. A global exception mapper returns safe generic `500` responses.
 
-> **Q2: Why is the query parameter approach (`?type=CO2`) considered superior for filtering compared to URL paths (`/type/CO2`)?**
+**Why use filters for logging**  
+JAX-RS filters centralize request/response logging and avoid repetitive logging code in every endpoint.
 
-**My Defense:** Query parameters correctly establish an explicit metadata subset functionally modifying an existing relational matrix logic cleanly (`/sensors`). Because they operate natively mapped as filtering arrays systematically expanding horizontally structurally (`?type=CO2&status=ACTIVE`), scaling endpoints operates elegantly properly statically linked to the exact same list domain locally. If I arbitrarily baked those variables natively into absolute URL routing structures inherently matching `/sensors/type/CO2`, my framework structurally claims that `type` identically acts natively representing distinct entity layers incorrectly breaking basic collection definitions logically structurally.
+---
 
-### Part 4: Deep Nesting with Sub-Resources
-
-> **Q1: Discuss the architectural benefits of the Sub-Resource Locator pattern. How does it help manage complexity in large APIs?**
-
-**My Defense:** Instead of cramming all advanced relational constraints dynamically interacting alongside nested configurations functionally inside a singular massive `SensorResource` file, my architecture perfectly bridges logical domains smoothly functionally. By simply binding my `@Path("/{sensorId}/readings")` directly outputting distinct `SensorReadingResource.java` class contexts seamlessly inherently, my API effectively executes flawless Single-Responsibility modularity cleanly natively preventing logic conflicts efficiently dynamically.
-
-### Part 5: Advanced Error Handling, Exception Mapping & Logging
-
-> **Q1: Why is HTTP 422 often considered more semantically accurate than a standard 404 when dealing with a missing reference inside a JSON payload?**
-
-**My Defense:** Standard `404 Not Found` messages correctly reflect conditions whenever clients incorrectly map their request structures onto unwritten mapping bindings sequentially improperly (`e.g /api/v1/fake-url`). So if I map out a perfect payload structurally onto `POST /sensors`, yet explicitly define broken `roomId` bindings natively inside my framework syntax properties sequentially, deploying `404 Not Found` radically confuses engineers fundamentally incorrectly. Raising perfectly mapped `422 Unprocessable Entity` structures (executed by the ExceptionMapper globally mapped onto my `LinkedResourceNotFoundException`) appropriately explains exactly theoretically: "The Endpoint works properly natively structurally; however, your JSON referential variables violate structural constraints functionally logically natively."
-
-> **Q2: From a cybersecurity standpoint, what are the risks associated with exposing internal Java stack traces to external API consumers?**
-
-**My Defense:** Exposing stack traces structurally unredacted openly grants external parties effectively a detailed topological map logically identifying backend layers structurally effortlessly. Uncaught variables natively explicitly log root path arrays structurally detailing precisely utilized package dependencies correctly functionally mapping exact Java/Jakarta operational patches identically implicitly. Threat actors efficiently scrape these operational vulnerabilities logically cross-referencing precise syntax frameworks cleanly across open-source CVE (Common Vulnerabilities) databanks natively logically exposing surgical entry point exploitations fundamentally effectively structurally natively reliably rapidly accurately!
-
-> **Q3: Why is it advantageous to use JAX-RS filters for logging rather than manually inserting `Logger.info()` inside every single resource method?**
-
-**My Defense:** Binding operational logging capabilities strictly alongside standard variables uniformly executing `Logger.info()` statically onto all 20 individual functions actively logically inherently creates heavy code redundancies and eventually mathematically risks accidental omission oversights locally natively logically properly gracefully. Operating JAX-RS `ContainerRequestFilter` integrations mathematically implements seamless Aspect-Oriented operational frameworks globally effortlessly flawlessly securely tracking entire application sequences automatically right as logic operations commence cleanly properly!
+## ✅ 6. CW Spec Alignment Checklist
+- Public GitHub repo with README report
+- JAX-RS only (no Spring Boot)
+- In-memory data only (no database)
+- Discovery endpoint and versioned base path
+- Room and sensor resources implemented
+- Sub-resource locator implemented
+- Exception mappers + global safety net + logging filter implemented
+- More than five cURL tests provided (16 included)
